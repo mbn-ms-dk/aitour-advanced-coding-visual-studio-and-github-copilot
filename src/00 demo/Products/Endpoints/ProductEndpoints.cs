@@ -8,10 +8,19 @@ namespace Products.Endpoints;
 
 public static class ProductEndpoints
 {
+    /// <summary>
+    /// Maps the product endpoints to the specified route builder.
+    /// </summary>
+    /// <param name="routes">The route builder to map the endpoints to.</param>
     public static void MapProductEndpoints(this IEndpointRouteBuilder routes)
     {
         var group = routes.MapGroup("/api/Product");
 
+        /// <summary>
+        /// Gets all products.
+        /// </summary>
+        /// <param name="db">The product data context.</param>
+        /// <returns>A list of all products.</returns>
         group.MapGet("/", async (ProductDataContext db) =>
         {
             return await db.Product.ToListAsync();
@@ -19,6 +28,12 @@ public static class ProductEndpoints
         .WithName("GetAllProducts")
         .Produces<List<Product>>(StatusCodes.Status200OK);
 
+        /// <summary>
+        /// Gets a product by its ID.
+        /// </summary>
+        /// <param name="id">The ID of the product.</param>
+        /// <param name="db">The product data context.</param>
+        /// <returns>The product with the specified ID, or a 404 status if not found.</returns>
         group.MapGet("/{id}", async (int id, ProductDataContext db) =>
         {
             return await db.Product.AsNoTracking()
@@ -31,6 +46,13 @@ public static class ProductEndpoints
         .Produces<Product>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound);
 
+        /// <summary>
+        /// Updates a product by its ID.
+        /// </summary>
+        /// <param name="id">The ID of the product to update.</param>
+        /// <param name="product">The updated product data.</param>
+        /// <param name="db">The product data context.</param>
+        /// <returns>A 200 status if the update was successful, or a 404 status if not found.</returns>
         group.MapPut("/{id}", async (int id, Product product, ProductDataContext db) =>
         {
             var affected = await db.Product
@@ -49,6 +71,12 @@ public static class ProductEndpoints
         .Produces(StatusCodes.Status404NotFound)
         .Produces(StatusCodes.Status204NoContent);
 
+        /// <summary>
+        /// Creates a new product.
+        /// </summary>
+        /// <param name="product">The product to create.</param>
+        /// <param name="db">The product data context.</param>
+        /// <returns>The created product with a 201 status.</returns>
         group.MapPost("/", async (Product product, ProductDataContext db) =>
         {
             db.Product.Add(product);
@@ -58,6 +86,12 @@ public static class ProductEndpoints
         .WithName("CreateProduct")
         .Produces<Product>(StatusCodes.Status201Created);
 
+        /// <summary>
+        /// Deletes a product by its ID.
+        /// </summary>
+        /// <param name="id">The ID of the product to delete.</param>
+        /// <param name="db">The product data context.</param>
+        /// <returns>A 200 status if the deletion was successful, or a 404 status if not found.</returns>
         group.MapDelete("/{id}", async (int id, ProductDataContext db) =>
         {
             var affected = await db.Product
@@ -70,22 +104,20 @@ public static class ProductEndpoints
         .Produces<Product>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound);
 
+        /// <summary>
+        /// Searches for products by name.
+        /// </summary>
+        /// <param name="search">The search term.</param>
+        /// <param name="db">The product data context.</param>
+        /// <returns>A list of products that match the search term.</returns>
         group.MapGet("/search/{search}", async (string search, ProductDataContext db) =>
         {
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            List<Product> products = new List<Product>();
-            var name = "";
-            for (int i = 0; i < db.Product.Count(); i++)
-            {
-                var product = db.Product.ToArray()[i];
-                name = product.Name;
-                if (name.Contains(search, StringComparison.InvariantCultureIgnoreCase))
-                {
-                    products.Add(product);
-                }
-            }
+            List<Product> products = await db.Product
+            .Where(p => EF.Functions.Like(p.Name, $"%{search}%"))
+            .ToListAsync();
 
             stopwatch.Stop();
 

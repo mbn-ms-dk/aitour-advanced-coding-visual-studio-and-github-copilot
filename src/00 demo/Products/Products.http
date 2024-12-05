@@ -3,4 +3,8 @@
 GET {{HostAddress}}/api/Product
 Accept: application/json
 
+### Search Products
+GET {{HostAddress}}/api/Product/search/camping
+Accept: application/json
+
 ###
